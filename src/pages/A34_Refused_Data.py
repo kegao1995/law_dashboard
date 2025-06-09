@@ -6,7 +6,7 @@ from plotly.subplots import make_subplots
 import os
 
 # Title
-st.title("🏛️ A34 Inadmissibility Refused Data Dashboard")
+st.title("🍁 A34 Inadmissibility Refused Data Dashboard")
 st.markdown("---")
 
 # Load data
