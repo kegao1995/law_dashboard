@@ -232,10 +232,11 @@ with tab3:
     st.subheader("Cases by Status Categories")
     
     col1, col2 = st.columns(2)
+    
     with col1:
         # COR Status distribution
         cor_data = filtered_df.groupby('cor_status')['count'].sum().reset_index()
-          # Use distinct colors for each COR status
+        # Use distinct colors for each COR status
         colors = ["#dc3e3e", "#fc8c8c"] 
         
         fig_cor = px.bar(
@@ -249,7 +250,8 @@ with tab3:
         fig_cor.update_layout(
             xaxis_title="COR Status",
             yaxis_title="Number of Cases",
-            showlegend=False
+            showlegend=False,
+            bargap=0.2  # Reduce gap between bars
         )
         st.plotly_chart(fig_cor, use_container_width=True)
     
@@ -271,7 +273,8 @@ with tab3:
         fig_resident.update_layout(
             xaxis_title="Resident Status",
             yaxis_title="Number of Cases",
-            showlegend=False
+            showlegend=False,
+            bargap=0.2  # Reduce gap between bars
         )
         st.plotly_chart(fig_resident, use_container_width=True)
 
