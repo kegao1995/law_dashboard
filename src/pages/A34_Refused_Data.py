@@ -232,22 +232,24 @@ with tab3:
     st.subheader("Cases by Status Categories")
     
     col1, col2 = st.columns(2)
-    
-    with col1:
+      with col1:
         # COR Status distribution
         cor_data = filtered_df.groupby('cor_status')['count'].sum().reset_index()
+          # Use distinct colors for each COR status
+        colors = ["#dc3e3e", "#fc8c8c"] 
         
         fig_cor = px.bar(
             cor_data,
             x='cor_status',
             y='count',
             title='Cases by COR Status',
-            color='count',
-            color_continuous_scale='Blues'
+            color='cor_status',
+            color_discrete_sequence=colors
         )
         fig_cor.update_layout(
             xaxis_title="COR Status",
-            yaxis_title="Number of Cases"
+            yaxis_title="Number of Cases",
+            showlegend=False
         )
         st.plotly_chart(fig_cor, use_container_width=True)
     
@@ -255,17 +257,21 @@ with tab3:
         # Resident status distribution
         resident_data = filtered_df.groupby('resident')['count'].sum().reset_index()
         
+        # Use distinct colors for each resident status
+        colors = ["#dc3e3e", "#fc8c8c"] 
+        
         fig_resident = px.bar(
             resident_data,
             x='resident',
             y='count',
             title='Cases by Resident Status',
-            color='count',
-            color_continuous_scale='Greens'
+            color='resident',
+            color_discrete_sequence=colors
         )
         fig_resident.update_layout(
             xaxis_title="Resident Status",
-            yaxis_title="Number of Cases"
+            yaxis_title="Number of Cases",
+            showlegend=False
         )
         st.plotly_chart(fig_resident, use_container_width=True)
 
