@@ -251,9 +251,8 @@ with tab3:
             xaxis_title="COR Status",
             yaxis_title="Number of Cases",
             showlegend=False,
-            bargap=0.2  # Reduce gap between bars
         )
-        st.plotly_chart(fig_cor, use_container_width=True)
+        st.plotly_chart(fig_cor)
     
     with col2:
         # Resident status distribution
@@ -274,9 +273,8 @@ with tab3:
             xaxis_title="Resident Status",
             yaxis_title="Number of Cases",
             showlegend=False,
-            bargap=0.2  # Reduce gap between bars
         )
-        st.plotly_chart(fig_resident, use_container_width=True)
+        st.plotly_chart(fig_resident)
 
 with tab4:
     st.subheader("Comparative Analysis")
