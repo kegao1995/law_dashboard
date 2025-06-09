@@ -232,7 +232,7 @@ with tab3:
     st.subheader("Cases by Status Categories")
     
     col1, col2 = st.columns(2)
-      with col1:
+    with col1:
         # COR Status distribution
         cor_data = filtered_df.groupby('cor_status')['count'].sum().reset_index()
           # Use distinct colors for each COR status
