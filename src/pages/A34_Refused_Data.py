@@ -32,7 +32,7 @@ if df.empty:
 # ----------------------
 st.header("🔍 Data Filters")
 
-col_f1, col_f2, col_f3, col_f4, col_f5, col_f6 = st.columns([1,1,1,1,1,1])
+col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns([1,1,1,1,1])
 
 with col_f5:
     if st.button("🗑️ Clear All Filters"):
