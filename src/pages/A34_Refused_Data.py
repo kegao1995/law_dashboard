@@ -27,14 +27,16 @@ df = load_data()
 if df.empty:
     st.stop()
 
-# Sidebar filters
-st.sidebar.header("🔍 Data Filters")
+# ----------------------
+# Filters on main page
+# ----------------------
+st.header("🔍 Data Filters")
 
-# Add a clear filters button
-if st.sidebar.button("🗑️ Clear All Filters"):
-    st.rerun()
+col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns([2,2,2,2,1])
 
-st.sidebar.markdown("---")
+with col_f5:
+    if st.button("🗑️ Clear All Filters"):
+        st.rerun()
 
 # Get unique values for each column
 countries = sorted(df['country'].unique())
@@ -42,34 +44,36 @@ years = sorted(df['year'].unique())
 cor_statuses = sorted(df['cor_status'].unique())
 residents = sorted(df['resident'].unique())
 
-# Create filters
-selected_countries = st.sidebar.multiselect(
-    "Select Countries:",
-    options=countries,
-    default=[],  # No default selection - show all data initially
-    help="Choose one or more countries to analyze (leave empty to show all)"
-)
+with col_f1:
+    selected_countries = st.multiselect(
+        "Select Countries:",
+        options=countries,
+        default=[],
+        help="Choose one or more countries to analyze (leave empty to show all)"
+    )
+with col_f2:
+    selected_years = st.multiselect(
+        "Select Years:",
+        options=years,
+        default=[],
+        help="Choose one or more years to analyze (leave empty to show all)"
+    )
+with col_f3:
+    selected_cor_status = st.multiselect(
+        "Select COR Status:",
+        options=cor_statuses,
+        default=[],
+        help="Choose COR (Country of Reference) status (leave empty to show all)"
+    )
+with col_f4:
+    selected_residents = st.multiselect(
+        "Select Resident Status:",
+        options=residents,
+        default=[],
+        help="Choose resident status (leave empty to show all)"
+    )
 
-selected_years = st.sidebar.multiselect(
-    "Select Years:",
-    options=years,
-    default=[],  # No default selection - show all data initially
-    help="Choose one or more years to analyze (leave empty to show all)"
-)
-
-selected_cor_status = st.sidebar.multiselect(
-    "Select COR Status:",
-    options=cor_statuses,
-    default=[],  # No default selection - show all data initially
-    help="Choose COR (Country of Reference) status (leave empty to show all)"
-)
-
-selected_residents = st.sidebar.multiselect(
-    "Select Resident Status:",
-    options=residents,
-    default=[],  # No default selection - show all data initially
-    help="Choose resident status (leave empty to show all)"
-)
+st.markdown("---")
 
 # Apply filters
 mask = pd.Series([True] * len(df))  # Start with all True
@@ -87,7 +91,7 @@ filtered_df = df[mask]
 
 # Show current filter status
 if not any([selected_countries, selected_years, selected_cor_status, selected_residents]):
-    st.info("ℹ️ No filters selected - showing all data. Use the sidebar to filter data by specific criteria.")
+    st.info("ℹ️ No filters selected - showing all data. Use the filter section above to select criteria.")
 else:
     active_filters = []
     if selected_countries:
@@ -98,7 +102,6 @@ else:
         active_filters.append(f"COR Status: {len(selected_cor_status)} selected")
     if selected_residents:
         active_filters.append(f"Resident Status: {len(selected_residents)} selected")
-    
     st.info(f"🔍 Active filters: {' | '.join(active_filters)}")
 
 # Main dashboard
