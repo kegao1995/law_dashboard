@@ -41,7 +41,7 @@ with col_f5:
 # Get unique values for each column
 countries = sorted(df['country'].unique())
 years = sorted(df['year'].unique())
-cor_statuses = sorted(df['cor_status'].unique())
+inadmissibility_grounds = sorted(df['inadmissibility_grounds'].unique())
 residents = sorted(df['resident'].unique())
 
 with col_f1:
@@ -59,11 +59,11 @@ with col_f2:
         help="Choose one or more years to analyze (leave empty to show all)"
     )
 with col_f3:
-    selected_cor_status = st.multiselect(
-        "Select COR Status:",
-        options=cor_statuses,
+    selected_inadmissibility = st.multiselect(
+        "Select Inadmissibility Grounds:",
+        options=inadmissibility_grounds,
         default=[],
-        help="Choose COR (Country of Reference) status (leave empty to show all)"
+        help="Choose inadmissibility grounds (leave empty to show all)"
     )
 with col_f4:
     selected_residents = st.multiselect(
@@ -82,15 +82,15 @@ if selected_countries:
     mask &= df['country'].isin(selected_countries)
 if selected_years:
     mask &= df['year'].isin(selected_years)
-if selected_cor_status:
-    mask &= df['cor_status'].isin(selected_cor_status)
+if selected_inadmissibility:
+    mask &= df['inadmissibility_grounds'].isin(selected_inadmissibility)
 if selected_residents:
     mask &= df['resident'].isin(selected_residents)
 
 filtered_df = df[mask]
 
 # Show current filter status
-if not any([selected_countries, selected_years, selected_cor_status, selected_residents]):
+if not any([selected_countries, selected_years, selected_inadmissibility, selected_residents]):
     st.info("ℹ️ No filters selected - showing all data. Use the filter section above to select criteria.")
 else:
     active_filters = []
@@ -98,8 +98,8 @@ else:
         active_filters.append(f"Countries: {len(selected_countries)} selected")
     if selected_years:
         active_filters.append(f"Years: {len(selected_years)} selected")
-    if selected_cor_status:
-        active_filters.append(f"COR Status: {len(selected_cor_status)} selected")
+    if selected_inadmissibility:
+        active_filters.append(f"Inadmissibility Grounds: {len(selected_inadmissibility)} selected")
     if selected_residents:
         active_filters.append(f"Resident Status: {len(selected_residents)} selected")
     st.info(f"🔍 Active filters: {' | '.join(active_filters)}")
@@ -153,171 +153,313 @@ st.dataframe(
 st.markdown("---")
 st.subheader("📈 Data Visualizations")
 
-# Create tabs for different visualizations
-tab1, tab2, tab3, tab4 = st.tabs(["📅 Trends Over Time", "🌍 By Country", "📊 By Status", "🔄 Comparative Analysis"])
+# Check if no filters are selected to show default charts
+no_filters_selected = not any([selected_countries, selected_years, selected_inadmissibility, selected_residents])
 
-with tab1:
-    st.subheader("Cases by Year")
+if no_filters_selected:
+    # Default visualizations when no filters are selected
+    st.subheader("🏠 Default Overview Charts")
     
-    # Time series chart
-    yearly_data = filtered_df.groupby('year')['count'].sum().reset_index()
+    col1, col2 = st.columns(2)
     
-    fig_line = px.line(
-        yearly_data, 
-        x='year', 
+    with col1:
+        # Total Refusals by Inadmissibility Grounds
+        inadmiss_data = df.groupby('inadmissibility_grounds')['count'].sum().reset_index()
+        inadmiss_data = inadmiss_data.sort_values('count', ascending=False)
+        
+        fig_inadmiss = px.bar(
+            inadmiss_data,
+            x='inadmissibility_grounds',
+            y='count',
+            title='Total Refusals by Inadmissibility Grounds',
+            color='count',
+            color_continuous_scale='Blues'
+        )
+        fig_inadmiss.update_layout(
+            xaxis_title="Inadmissibility Grounds",
+            yaxis_title="Count",
+            xaxis_tickangle=-45
+        )
+        st.plotly_chart(fig_inadmiss, use_container_width=True)
+    
+    with col2:
+        # Top 10 Countries by Total Refusals
+        country_counts = df.groupby('country')['count'].sum().sort_values(ascending=False).head(10).reset_index()
+        
+        fig_countries = px.bar(
+            country_counts,
+            x='country',
+            y='count',
+            title='Top 10 Countries by Total Refusals',
+            color='count',
+            color_continuous_scale='Blues'
+        )
+        fig_countries.update_layout(
+            xaxis_title="Country",
+            yaxis_title="Count",
+            xaxis_tickangle=-45
+        )
+        st.plotly_chart(fig_countries, use_container_width=True)
+    
+    # Total Refusals Per Year
+    yearly_totals = df.groupby('year')['count'].sum().reset_index()
+    
+    fig_yearly = px.line(
+        yearly_totals,
+        x='year',
         y='count',
-        title='Total Refused Cases Over Time',
+        title='Total Refusals Per Year',
         markers=True,
         line_shape='spline'
     )
-    fig_line.update_layout(
+    fig_yearly.update_layout(
         xaxis_title="Year",
-        yaxis_title="Number of Cases",
-        hovermode='x unified'
+        yaxis_title="Count"
     )
-    st.plotly_chart(fig_line, use_container_width=True)
+    st.plotly_chart(fig_yearly, use_container_width=True)
     
-    # Stacked area chart by COR status
-    yearly_cor_data = filtered_df.groupby(['year', 'cor_status'])['count'].sum().reset_index()
+    # Refusal Trends Over Time by Inadmissibility Types
+    yearly_inadmiss = df.groupby(['year', 'inadmissibility_grounds'])['count'].sum().reset_index()
     
-    fig_area = px.area(
-        yearly_cor_data,
+    fig_trends = px.line(
+        yearly_inadmiss,
         x='year',
         y='count',
-        color='cor_status',
-        title='Cases Over Time by COR Status'
+        color='inadmissibility_grounds',
+        title='Refusal Trends Over Time by Inadmissibility Types',
+        markers=True
     )
-    fig_area.update_layout(
+    fig_trends.update_layout(
         xaxis_title="Year",
-        yaxis_title="Number of Cases"
+        yaxis_title="Number of Refusals",
+        legend_title="Inadmissibility Type"
     )
-    st.plotly_chart(fig_area, use_container_width=True)
-
-with tab2:
-    st.subheader("Cases by Country")
+    st.plotly_chart(fig_trends, use_container_width=True)
     
-    col1, col2 = st.columns(2)
+    # Slope Graph for Resident Status
+    st.subheader("📊 Resident Status Trends")
     
-    with col1:
-        # Bar chart by country
-        country_data = filtered_df.groupby('country')['count'].sum().reset_index().sort_values('count', ascending=False)
+    # Prepare data for slope graph
+    resident_yearly = df.groupby(['year', 'resident'])['count'].sum().reset_index()
+    
+    # Create slope graph
+    fig_slope = go.Figure()
+    
+    residents_list = resident_yearly['resident'].unique()
+    colors = px.colors.qualitative.Set2
+    
+    for i, resident_type in enumerate(residents_list):
+        data = resident_yearly[resident_yearly['resident'] == resident_type]
         
-        fig_bar = px.bar(
-            country_data.head(15),  # Show top 15 countries
-            x='count',
-            y='country',
-            orientation='h',
-            title='Top Countries by Number of Cases',
-            color='count',
-            color_continuous_scale='Reds'
-        )
-        fig_bar.update_layout(
-            xaxis_title="Number of Cases",
-            yaxis_title="Country",
-            yaxis={'categoryorder': 'total ascending'}
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
+        fig_slope.add_trace(go.Scatter(
+            x=data['year'],
+            y=data['count'],
+            mode='lines+markers',
+            name=resident_type,
+            line=dict(color=colors[i % len(colors)], width=3),
+            marker=dict(size=8)
+        ))
     
-    with col2:
-        # Pie chart for top countries
+    fig_slope.update_layout(
+        title='Refusals by Resident Status Over Time (Slope Graph)',
+        xaxis_title='Year',
+        yaxis_title='Number of Refusals',
+        height=500,
+        hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig_slope, use_container_width=True)
+
+else:
+    # Filtered visualizations - dynamic based on selected filters
+    st.subheader("🔍 Filtered Data Visualizations")
+    
+    # Determine which filters are active
+    year_selected = len(selected_years) > 0
+    country_selected = len(selected_countries) > 0
+    inadmissibility_selected = len(selected_inadmissibility) > 0
+    resident_selected = len(selected_residents) > 0
+    
+    # Case 1: All three main filters selected (year, country, inadmissibility)
+    if year_selected and country_selected and inadmissibility_selected:
+        st.subheader("📊 Complete Filter Applied")
+        total_refusals = filtered_df['count'].sum()
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Refusals", f"{total_refusals:,}")
+        with col2:
+            st.metric("Years", f"{', '.join(map(str, selected_years))}")
+        with col3:
+            st.metric("Countries", f"{', '.join(selected_countries[:3])}{'...' if len(selected_countries) > 3 else ''}")
+        
+        if total_refusals > 0:
+            st.success(f"Found {total_refusals} refusal(s) matching your criteria.")
+        else:
+            st.warning("No refusals found matching your criteria.")
+    
+    # Case 2: Year and Country selected (show inadmissibility grounds)
+    elif year_selected and country_selected and not inadmissibility_selected:
+        st.subheader("📊 Inadmissibility Grounds for Selected Year(s) and Country(ies)")
+        
+        inadmiss_data = filtered_df.groupby('inadmissibility_grounds')['count'].sum().reset_index()
+        inadmiss_data = inadmiss_data.sort_values('count', ascending=False)
+        
+        if not inadmiss_data.empty:
+            fig_inadmiss = px.bar(
+                inadmiss_data,
+                x='inadmissibility_grounds',
+                y='count',
+                title=f'Inadmissibility Grounds for {", ".join(selected_countries[:3])} in {", ".join(map(str, selected_years))}',
+                color='count',
+                color_continuous_scale='Oranges'
+            )
+            fig_inadmiss.update_layout(
+                xaxis_title="Inadmissibility Grounds",
+                yaxis_title="Number of Refusals",
+                xaxis_tickangle=-45
+            )
+            st.plotly_chart(fig_inadmiss, use_container_width=True)
+    
+    # Case 3: Year and Inadmissibility selected (show top countries)
+    elif year_selected and inadmissibility_selected and not country_selected:
+        st.subheader("🌍 Top Countries for Selected Year(s) and Inadmissibility Ground(s)")
+        
+        country_data = filtered_df.groupby('country')['count'].sum().reset_index().sort_values('count', ascending=False)
         top_countries = country_data.head(10)
         
-        fig_pie = px.pie(
-            top_countries,
-            values='count',
-            names='country',
-            title='Distribution of Cases (Top 10 Countries)'
-        )
-        fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-with tab3:
-    st.subheader("Cases by Status Categories")
+        if not top_countries.empty:
+            fig_countries = px.bar(
+                top_countries,
+                x='country',
+                y='count',
+                title=f'Top 10 Countries for {", ".join(selected_inadmissibility)} in {", ".join(map(str, selected_years))}',
+                color='count',
+                color_continuous_scale='Reds'
+            )
+            fig_countries.update_layout(
+                xaxis_title="Country",
+                yaxis_title="Number of Refusals",
+                xaxis_tickangle=-45
+            )
+            st.plotly_chart(fig_countries, use_container_width=True)
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # COR Status distribution
-        cor_data = filtered_df.groupby('cor_status')['count'].sum().reset_index()
-        # Use distinct colors for each COR status
-        colors = ["#dc3e3e", "#fc8c8c"] 
+    # Case 4: Country and Inadmissibility selected (show yearly trends)
+    elif country_selected and inadmissibility_selected and not year_selected:
+        st.subheader("📅 Yearly Trends for Selected Country(ies) and Inadmissibility Ground(s)")
         
-        fig_cor = px.bar(
-            cor_data,
-            x='cor_status',
-            y='count',
-            title='Cases by COR Status',
-            color='cor_status',
-            color_discrete_sequence=colors
-        )
-        fig_cor.update_layout(
-            xaxis_title="COR Status",
-            yaxis_title="Number of Cases",
-            showlegend=False,
-        )
-        st.plotly_chart(fig_cor)
-    
-    with col2:
-        # Resident status distribution
-        resident_data = filtered_df.groupby('resident')['count'].sum().reset_index()
+        yearly_data = filtered_df.groupby('year')['count'].sum().reset_index()
         
-        # Use distinct colors for each resident status
-        colors = ["#dc3e3e", "#fc8c8c"] 
+        if not yearly_data.empty:
+            fig_yearly = px.line(
+                yearly_data,
+                x='year',
+                y='count',
+                title=f'Refusals Over Time: {", ".join(selected_countries[:3])} - {", ".join(selected_inadmissibility)}',
+                markers=True,
+                line_shape='spline'
+            )
+            fig_yearly.update_layout(
+                xaxis_title="Year",
+                yaxis_title="Number of Refusals"
+            )
+            st.plotly_chart(fig_yearly, use_container_width=True)
+    
+    # Case 5: Only Year selected (show treemap for top countries with inadmissibility grounds)
+    elif year_selected and not country_selected and not inadmissibility_selected:
+        st.subheader(f"🗺️ Top Countries and Inadmissibility Grounds for {', '.join(map(str, selected_years))}")
         
-        fig_resident = px.bar(
-            resident_data,
-            x='resident',
-            y='count',
-            title='Cases by Resident Status',
-            color='resident',
-            color_discrete_sequence=colors
-        )
-        fig_resident.update_layout(
-            xaxis_title="Resident Status",
-            yaxis_title="Number of Cases",
-            showlegend=False,
-        )
-        st.plotly_chart(fig_resident)
-
-with tab4:
-    st.subheader("Comparative Analysis")
+        # Get top 5 countries for the selected year(s)
+        top_countries_data = filtered_df.groupby('country')['count'].sum().sort_values(ascending=False).head(5)
+        treemap_data = filtered_df[filtered_df['country'].isin(top_countries_data.index)]
+        
+        if not treemap_data.empty and treemap_data['count'].sum() > 0:
+            fig_treemap = px.treemap(
+                treemap_data,
+                path=["country", "inadmissibility_grounds"],
+                values="count",
+                title=f"Top 5 Countries and Inadmissibility Grounds for {', '.join(map(str, selected_years))}"
+            )
+            fig_treemap.update_traces(textinfo="label+value+percent entry")
+            fig_treemap.update_layout(height=600)
+            st.plotly_chart(fig_treemap, use_container_width=True)
     
-    # Heatmap showing relationship between country and year
-    heatmap_data = filtered_df.pivot_table(
-        values='count', 
-        index='country', 
-        columns='year', 
-        aggfunc='sum', 
-        fill_value=0
-    )
+    # Case 6: Only Country selected (show treemap with inadmissibility grounds)
+    elif country_selected and not year_selected and not inadmissibility_selected:
+        st.subheader(f"🗺️ Inadmissibility Grounds for {', '.join(selected_countries[:3])}")
+        
+        if not filtered_df.empty and filtered_df['count'].sum() > 0:
+            fig_treemap = px.treemap(
+                filtered_df,
+                path=["country", "inadmissibility_grounds"],
+                values="count",
+                title=f"Inadmissibility Grounds for {', '.join(selected_countries[:3])}"
+            )
+            fig_treemap.update_traces(textinfo="label+value+percent entry")
+            fig_treemap.update_layout(height=600)
+            st.plotly_chart(fig_treemap, use_container_width=True)
     
-    # Only show countries with significant data
-    country_totals = heatmap_data.sum(axis=1).sort_values(ascending=False)
-    top_countries_heatmap = country_totals.head(15).index
-    heatmap_subset = heatmap_data.loc[top_countries_heatmap]
+    # Case 7: Only Inadmissibility selected (show trends by country instead of inadmissibility)
+    elif inadmissibility_selected and not year_selected and not country_selected:
+        st.subheader(f"📈 Refusal Trends Over Time by Country for {', '.join(selected_inadmissibility)}")
+        
+        yearly_country_data = filtered_df.groupby(['year', 'country'])['count'].sum().reset_index()
+        # Get top 10 countries for this inadmissibility ground
+        top_countries_for_ground = filtered_df.groupby('country')['count'].sum().sort_values(ascending=False).head(10).index
+        yearly_country_filtered = yearly_country_data[yearly_country_data['country'].isin(top_countries_for_ground)]
+        
+        if not yearly_country_filtered.empty:
+            fig_trends = px.line(
+                yearly_country_filtered,
+                x='year',
+                y='count',
+                color='country',
+                title=f'Refusal Trends Over Time by Country for {", ".join(selected_inadmissibility)}',
+                markers=True
+            )
+            fig_trends.update_layout(
+                xaxis_title="Year",
+                yaxis_title="Number of Refusals",
+                legend_title="Country"
+            )
+            st.plotly_chart(fig_trends, use_container_width=True)
     
-    fig_heatmap = px.imshow(
-        heatmap_subset,
-        title='Cases Heatmap: Countries vs Years',
-        color_continuous_scale='Reds',
-        aspect='auto'
-    )
-    fig_heatmap.update_layout(
-        xaxis_title="Year",
-        yaxis_title="Country"
-    )
-    st.plotly_chart(fig_heatmap, use_container_width=True)
-    
-    # Sunburst chart for hierarchical view
-    sunburst_data = filtered_df[filtered_df['count'] > 0].copy()  # Only show non-zero cases
-    
-    fig_sunburst = px.sunburst(
-        sunburst_data,
-        path=['cor_status', 'country', 'year'],
-        values='count',
-        title='Hierarchical View: COR Status → Country → Year'
-    )
-    st.plotly_chart(fig_sunburst, use_container_width=True)
+    # Case 8: Only Resident selected or other combinations
+    else:
+        st.subheader("📊 General Analysis")
+        
+        # Show a few key charts based on available data
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Bar chart by most relevant dimension
+            if not country_selected:
+                country_data = filtered_df.groupby('country')['count'].sum().reset_index().sort_values('count', ascending=False).head(10)
+                if not country_data.empty:
+                    fig_bar = px.bar(
+                        country_data,
+                        x='country',
+                        y='count',
+                        title='Top 10 Countries',
+                        color='count',
+                        color_continuous_scale='Blues'
+                    )
+                    fig_bar.update_layout(xaxis_tickangle=-45)
+                    st.plotly_chart(fig_bar, use_container_width=True)
+        
+        with col2:
+            # Yearly trend if not year selected
+            if not year_selected:
+                yearly_data = filtered_df.groupby('year')['count'].sum().reset_index()
+                if not yearly_data.empty:
+                    fig_yearly = px.line(
+                        yearly_data,
+                        x='year',
+                        y='count',
+                        title='Yearly Trends',
+                        markers=True
+                    )
+                    st.plotly_chart(fig_yearly, use_container_width=True)
 
 # Download section
 st.markdown("---")
@@ -342,7 +484,7 @@ with st.expander("📈 Summary Statistics"):
         'Total Cases': [filtered_df['count'].sum()],
         'Countries': [filtered_df['country'].nunique()],
         'Years Covered': [filtered_df['year'].nunique()],
-        'COR Statuses': [filtered_df['cor_status'].nunique()],
+        'Inadmissibility Grounds': [filtered_df['inadmissibility_grounds'].nunique()],
         'Resident Types': [filtered_df['resident'].nunique()],
         'Non-Zero Cases': [len(filtered_df[filtered_df['count'] > 0])],
         'Zero Cases': [len(filtered_df[filtered_df['count'] == 0])]
