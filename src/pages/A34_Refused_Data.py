@@ -86,14 +86,16 @@ def create_resident_slope_graph(data, title_suffix=""):
 # ----------------------
 st.header("🔍 Data Filters")
 
+# Initialize clear filter state
+if 'clear_filters' not in st.session_state:
+    st.session_state.clear_filters = False
+
 col_f1, col_f2, col_f3, col_f4 = st.columns([1,1,1,1])
 
 with col_f4:
     if st.button("🗑️ Clear All Filters"):
-        # Clear all session state variables for filters
-        for key in ['selected_countries', 'selected_years', 'selected_inadmissibility']:
-            if key in st.session_state:
-                del st.session_state[key]
+        # Set flag to clear filters
+        st.session_state.clear_filters = True
         st.rerun()
 
 # Get unique values for each column
@@ -101,11 +103,20 @@ countries = sorted(df['country'].unique())
 years = sorted(df['year'].unique())
 inadmissibility_grounds = sorted(df['inadmissibility_grounds'].unique())
 
+# Determine default values based on clear filter state
+countries_default = [] if st.session_state.clear_filters else st.session_state.get('selected_countries', [])
+years_default = [] if st.session_state.clear_filters else st.session_state.get('selected_years', [])
+inadmissibility_default = [] if st.session_state.clear_filters else st.session_state.get('selected_inadmissibility', [])
+
+# Reset the clear filter flag after using it
+if st.session_state.clear_filters:
+    st.session_state.clear_filters = False
+
 with col_f1:
     selected_countries = st.multiselect(
         "Select Countries:",
         options=countries,
-        default=[],
+        default=countries_default,
         key='selected_countries',
         help="Choose one or more countries to analyze (leave empty to show all)"
     )
@@ -113,7 +124,7 @@ with col_f2:
     selected_years = st.multiselect(
         "Select Years:",
         options=years,
-        default=[],
+        default=years_default,
         key='selected_years',
         help="Choose one or more years to analyze (leave empty to show all)"
     )
@@ -121,7 +132,7 @@ with col_f3:
     selected_inadmissibility = st.multiselect(
         "Select Inadmissibility Grounds:",
         options=inadmissibility_grounds,
-        default=[],
+        default=inadmissibility_default,
         key='selected_inadmissibility',
         help="Choose inadmissibility grounds (leave empty to show all)"
     )
@@ -176,8 +187,6 @@ with col3:
 with col4:
     avg_cases_per_country = filtered_df.groupby('country')['count'].sum().mean()
     st.metric("Avg Cases/Country", f"{avg_cases_per_country:.1f}")
-
-st.markdown("---")
 
 # Visualizations
 st.markdown("---")
