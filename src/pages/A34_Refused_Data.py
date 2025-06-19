@@ -401,12 +401,11 @@ else:
                 fig_countries.update_layout(
                     xaxis_title="Country",
                     yaxis_title="Number of Refusals",
-                    xaxis_tickangle=-45
-                )
+                    xaxis_tickangle=-45                )
                 st.plotly_chart(fig_countries, use_container_width=True)
         
         with col2:
-            # Time series for the selected inadmissibility ground if multiple years
+            # Time series for the selected inadmissibility ground
             if len(selected_years) > 1:
                 yearly_inadmiss = filtered_df.groupby('year')['count'].sum().reset_index()
                 
@@ -424,24 +423,23 @@ else:
                 )
                 st.plotly_chart(fig_yearly, use_container_width=True)
             else:
-                # If single year, show inadmissibility breakdown by countries
-                inadmiss_countries = filtered_df.groupby(['country', 'inadmissibility_grounds'])['count'].sum().reset_index()
+                # If single year, show summary metrics instead
+                total_cases = filtered_df['count'].sum()
+                unique_countries = filtered_df['country'].nunique()
                 
-                if not inadmiss_countries.empty:
-                    fig_breakdown = px.bar(
-                        inadmiss_countries.head(10),
-                        x='country',
-                        y='count',
-                        color='inadmissibility_grounds',
-                        title=f'Breakdown by Country in {", ".join(map(str, selected_years))}',
-                        color_discrete_sequence=px.colors.qualitative.Set2
+                col2_1, col2_2 = st.columns(2)
+                with col2_1:
+                    st.metric(
+                        "Total Cases",
+                        f"{total_cases:,}",
+                        help=f"Total refusals for {', '.join(selected_inadmissibility)} in {', '.join(map(str, selected_years))}"
                     )
-                    fig_breakdown.update_layout(
-                        xaxis_title="Country",
-                        yaxis_title="Number of Refusals",
-                        xaxis_tickangle=-45
+                with col2_2:
+                    st.metric(
+                        "Countries Affected", 
+                        unique_countries,
+                        help="Number of countries with refusals"
                     )
-                    st.plotly_chart(fig_breakdown, use_container_width=True)
           # Add slope graph for resident comparison
         st.subheader("📊 Permanent vs Temporary Residents Comparison")
         slope_fig = create_resident_slope_graph(filtered_df, f" - {', '.join(selected_inadmissibility)} in {', '.join(map(str, selected_years))}")
