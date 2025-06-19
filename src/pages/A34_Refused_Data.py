@@ -104,37 +104,40 @@ years = sorted(df['year'].unique())
 inadmissibility_grounds = sorted(df['inadmissibility_grounds'].unique())
 
 # Determine default values based on clear filter state
-countries_default = [] if st.session_state.clear_filters else st.session_state.get('selected_countries', [])
-years_default = [] if st.session_state.clear_filters else st.session_state.get('selected_years', [])
-inadmissibility_default = [] if st.session_state.clear_filters else st.session_state.get('selected_inadmissibility', [])
+countries_default = None if st.session_state.clear_filters else st.session_state.get('selected_countries', None)
+years_default = None if st.session_state.clear_filters else st.session_state.get('selected_years', None)
+inadmissibility_default = None if st.session_state.clear_filters else st.session_state.get('selected_inadmissibility', None)
 
 # Reset the clear filter flag after using it
 if st.session_state.clear_filters:
     st.session_state.clear_filters = False
 
 with col_f1:
-    selected_countries = st.multiselect(
-        "Select Countries:",
-        options=countries,
-        default=countries_default,
+    selected_countries = st.selectbox(
+        "Select Country:",
+        options=[None] + countries,
+        index=0 if countries_default is None else (countries.index(countries_default) + 1 if countries_default in countries else 0),
         key='selected_countries',
-        help="Choose one or more countries to analyze (leave empty to show all)"
+        help="Choose a country to analyze (leave empty to show all)",
+        format_func=lambda x: "All Countries" if x is None else x
     )
 with col_f2:
-    selected_years = st.multiselect(
-        "Select Years:",
-        options=years,
-        default=years_default,
+    selected_years = st.selectbox(
+        "Select Year:",
+        options=[None] + years,
+        index=0 if years_default is None else (years.index(years_default) + 1 if years_default in years else 0),
         key='selected_years',
-        help="Choose one or more years to analyze (leave empty to show all)"
+        help="Choose a year to analyze (leave empty to show all)",
+        format_func=lambda x: "All Years" if x is None else str(x)
     )
 with col_f3:
-    selected_inadmissibility = st.multiselect(
-        "Select Inadmissibility Grounds:",
-        options=inadmissibility_grounds,
-        default=inadmissibility_default,
+    selected_inadmissibility = st.selectbox(
+        "Select Inadmissibility Ground:",
+        options=[None] + inadmissibility_grounds,
+        index=0 if inadmissibility_default is None else (inadmissibility_grounds.index(inadmissibility_default) + 1 if inadmissibility_default in inadmissibility_grounds else 0),
         key='selected_inadmissibility',
-        help="Choose inadmissibility grounds (leave empty to show all)"
+        help="Choose an inadmissibility ground (leave empty to show all)",
+        format_func=lambda x: "All Inadmissibility Grounds" if x is None else x
     )
 
 st.markdown("---")
@@ -142,26 +145,26 @@ st.markdown("---")
 # Apply filters
 mask = pd.Series([True] * len(df))  # Start with all True
 
-if selected_countries:
-    mask &= df['country'].isin(selected_countries)
-if selected_years:
-    mask &= df['year'].isin(selected_years)
-if selected_inadmissibility:
-    mask &= df['inadmissibility_grounds'].isin(selected_inadmissibility)
+if selected_countries is not None:
+    mask &= df['country'] == selected_countries
+if selected_years is not None:
+    mask &= df['year'] == selected_years
+if selected_inadmissibility is not None:
+    mask &= df['inadmissibility_grounds'] == selected_inadmissibility
 
 filtered_df = df[mask]
 
 # Show current filter status
-if not any([selected_countries, selected_years, selected_inadmissibility]):
+if not any([selected_countries is not None, selected_years is not None, selected_inadmissibility is not None]):
     st.info("ℹ️ No filters selected - showing all data. Use the filter section above to select criteria.")
 else:
     active_filters = []
-    if selected_countries:
-        active_filters.append(f"Countries: {len(selected_countries)} selected")
-    if selected_years:
-        active_filters.append(f"Years: {len(selected_years)} selected")
-    if selected_inadmissibility:
-        active_filters.append(f"Inadmissibility Grounds: {len(selected_inadmissibility)} selected")
+    if selected_countries is not None:
+        active_filters.append(f"Country: {selected_countries}")
+    if selected_years is not None:
+        active_filters.append(f"Year: {selected_years}")
+    if selected_inadmissibility is not None:
+        active_filters.append(f"Inadmissibility Ground: {selected_inadmissibility}")
     st.info(f"🔍 Active filters: {' | '.join(active_filters)}")
 
 # Main dashboard
@@ -193,7 +196,7 @@ st.markdown("---")
 st.subheader("📈 Data Visualizations")
 
 # Check if no filters are selected to show default charts
-no_filters_selected = not any([selected_countries, selected_years, selected_inadmissibility])
+no_filters_selected = not any([selected_countries is not None, selected_years is not None, selected_inadmissibility is not None])
 
 if no_filters_selected:
     # Default visualizations when no filters are selected
@@ -283,9 +286,9 @@ if no_filters_selected:
 else:
     # Filtered visualizations - dynamic based on selected filters
     st.subheader("🔍 Filtered Data Visualizations")    # Determine which filters are active
-    year_selected = len(selected_years) > 0
-    country_selected = len(selected_countries) > 0
-    inadmissibility_selected = len(selected_inadmissibility) > 0
+    year_selected = selected_years is not None
+    country_selected = selected_countries is not None
+    inadmissibility_selected = selected_inadmissibility is not None
     
     # Case 1: All three main filters selected (year, country, inadmissibility)
     if year_selected and country_selected and inadmissibility_selected:
@@ -296,23 +299,23 @@ else:
         with col1:
             st.metric("Total Refusals", f"{total_refusals:,}")
         with col2:
-            st.metric("Years", f"{', '.join(map(str, selected_years))}")
+            st.metric("Year", str(selected_years))
         with col3:
-            st.metric("Countries", f"{', '.join(selected_countries[:3])}{'...' if len(selected_countries) > 3 else ''}")
+            st.metric("Country", selected_countries)
         
         if total_refusals > 0:
             st.success(f"Found {total_refusals} refusal(s) matching your criteria.")
             
             # Add slope graph for this filtered data
             st.subheader("📊 Permanent vs Temporary Residents Comparison")
-            slope_fig = create_resident_slope_graph(filtered_df, f" - {', '.join(selected_countries[:3])} in {', '.join(map(str, selected_years))}")
+            slope_fig = create_resident_slope_graph(filtered_df, f" - {selected_countries} in {selected_years}")
             if slope_fig:
                 st.plotly_chart(slope_fig, use_container_width=True)
         else:
             st.warning("No refusals found matching your criteria.")
       # Case 2: Year and Country selected (show inadmissibility grounds)
     elif year_selected and country_selected and not inadmissibility_selected:
-        st.subheader("📊 Analysis for Selected Year(s) and Country(ies)")
+        st.subheader("📊 Analysis for Selected Year and Country")
         
         col1, col2 = st.columns(2)
         
@@ -326,7 +329,7 @@ else:
                     inadmiss_data,
                     x='inadmissibility_grounds',
                     y='count',
-                    title=f'Inadmissibility Grounds for {", ".join(selected_countries[:3])} in {", ".join(map(str, selected_years))}',
+                    title=f'Inadmissibility Grounds for {selected_countries} in {selected_years}',
                     color_discrete_sequence=['#FF6B6B']
                 )
                 fig_inadmiss.update_layout(
@@ -337,51 +340,31 @@ else:
                 st.plotly_chart(fig_inadmiss, use_container_width=True)
         
         with col2:
-            # Countries bar chart (if multiple countries selected)
-            if len(selected_countries) > 1:
-                country_data = filtered_df.groupby('country')['count'].sum().reset_index()
-                country_data = country_data.sort_values('count', ascending=False)
-                
-                fig_countries = px.bar(
-                    country_data,
-                    x='country',
-                    y='count',
-                    title=f'Countries in {", ".join(map(str, selected_years))}',
-                    color_discrete_sequence=['#4ECDC4']
+            # Show summary metrics since we only have single selections
+            total_cases = filtered_df['count'].sum()
+            unique_inadmiss = filtered_df['inadmissibility_grounds'].nunique()
+            
+            col2_1, col2_2 = st.columns(2)
+            with col2_1:
+                st.metric(
+                    "Total Cases",
+                    f"{total_cases:,}",
+                    help=f"Total refusals for {selected_countries} in {selected_years}"
                 )
-                fig_countries.update_layout(
-                    xaxis_title="Country",
-                    yaxis_title="Number of Refusals",
-                    xaxis_tickangle=-45
-                )
-                st.plotly_chart(fig_countries, use_container_width=True)
-            else:
-                # If only one country, show time series if multiple years
-                if len(selected_years) > 1:
-                    yearly_data = filtered_df.groupby('year')['count'].sum().reset_index()
-                    
-                    fig_yearly = px.line(
-                        yearly_data,
-                        x='year',
-                        y='count',
-                        title=f'Yearly Trend for {selected_countries[0]}',
-                        markers=True,
-                        line_shape='spline'
-                    )
-                    fig_yearly.update_layout(
-                        xaxis_title="Year",
-                        yaxis_title="Number of Refusals"
-                    )
-                    st.plotly_chart(fig_yearly, use_container_width=True)
+            with col2_2:
+                st.metric(
+                    "Inadmissibility Types", 
+                    unique_inadmiss,
+                    help="Number of different inadmissibility grounds"                )
         
         # Add slope graph for resident comparison
         st.subheader("📊 Permanent vs Temporary Residents Comparison")
-        slope_fig = create_resident_slope_graph(filtered_df, f" - {', '.join(selected_countries[:3])} in {', '.join(map(str, selected_years))}")
+        slope_fig = create_resident_slope_graph(filtered_df, f" - {selected_countries} in {selected_years}")
         if slope_fig:
             st.plotly_chart(slope_fig, use_container_width=True)
       # Case 3: Year and Inadmissibility selected (show top countries)
     elif year_selected and inadmissibility_selected and not country_selected:
-        st.subheader("🌍 Analysis for Selected Year(s) and Inadmissibility Ground(s)")
+        st.subheader("🌍 Analysis for Selected Year and Inadmissibility Ground")
         
         col1, col2 = st.columns(2)
         
@@ -395,60 +378,43 @@ else:
                     top_countries,
                     x='country',
                     y='count',
-                    title=f'Top 10 Countries for {", ".join(selected_inadmissibility)} in {", ".join(map(str, selected_years))}',
+                    title=f'Top 10 Countries for {selected_inadmissibility} in {selected_years}',
                     color_discrete_sequence=['#FF6B6B']
                 )
                 fig_countries.update_layout(
                     xaxis_title="Country",
                     yaxis_title="Number of Refusals",
-                    xaxis_tickangle=-45                )
+                    xaxis_tickangle=-45
+                )
                 st.plotly_chart(fig_countries, use_container_width=True)
         
         with col2:
-            # Time series for the selected inadmissibility ground
-            if len(selected_years) > 1:
-                yearly_inadmiss = filtered_df.groupby('year')['count'].sum().reset_index()
-                
-                fig_yearly = px.line(
-                    yearly_inadmiss,
-                    x='year',
-                    y='count',
-                    title=f'{", ".join(selected_inadmissibility)} Over Time',
-                    markers=True,
-                    line_shape='spline'
+            # Show summary metrics since we only have single selections
+            total_cases = filtered_df['count'].sum()
+            unique_countries = filtered_df['country'].nunique()
+            
+            col2_1, col2_2 = st.columns(2)
+            with col2_1:
+                st.metric(
+                    "Total Cases",
+                    f"{total_cases:,}",
+                    help=f"Total refusals for {selected_inadmissibility} in {selected_years}"
                 )
-                fig_yearly.update_layout(
-                    xaxis_title="Year",
-                    yaxis_title="Number of Refusals"
+            with col2_2:                st.metric(
+                    "Countries Affected", 
+                    unique_countries,
+                    help="Number of countries with refusals"
                 )
-                st.plotly_chart(fig_yearly, use_container_width=True)
-            else:
-                # If single year, show summary metrics instead
-                total_cases = filtered_df['count'].sum()
-                unique_countries = filtered_df['country'].nunique()
-                
-                col2_1, col2_2 = st.columns(2)
-                with col2_1:
-                    st.metric(
-                        "Total Cases",
-                        f"{total_cases:,}",
-                        help=f"Total refusals for {', '.join(selected_inadmissibility)} in {', '.join(map(str, selected_years))}"
-                    )
-                with col2_2:
-                    st.metric(
-                        "Countries Affected", 
-                        unique_countries,
-                        help="Number of countries with refusals"
-                    )
-          # Add slope graph for resident comparison
+        
+        # Add slope graph for resident comparison
         st.subheader("📊 Permanent vs Temporary Residents Comparison")
-        slope_fig = create_resident_slope_graph(filtered_df, f" - {', '.join(selected_inadmissibility)} in {', '.join(map(str, selected_years))}")
+        slope_fig = create_resident_slope_graph(filtered_df, f" - {selected_inadmissibility} in {selected_years}")
         if slope_fig:
             st.plotly_chart(slope_fig, use_container_width=True)
     
     # Case 4: Country and Inadmissibility selected (show yearly trends)
     elif country_selected and inadmissibility_selected and not year_selected:
-        st.subheader("📅 Yearly Trends for Selected Country(ies) and Inadmissibility Ground(s)")
+        st.subheader("📅 Yearly Trends for Selected Country and Inadmissibility Ground")
         
         yearly_data = filtered_df.groupby('year')['count'].sum().reset_index()
         
@@ -457,7 +423,7 @@ else:
                 yearly_data,
                 x='year',                
                  y='count',
-                title=f'Refusals Over Time: {", ".join(selected_countries[:3])} - {", ".join(selected_inadmissibility)}',
+                title=f'Refusals Over Time: {selected_countries} - {selected_inadmissibility}',
                 markers=True,
                 line_shape='spline'
             )
@@ -469,15 +435,15 @@ else:
             
             # Add slope graph for resident comparison
             st.subheader("📊 Permanent vs Temporary Residents Comparison")
-            slope_fig = create_resident_slope_graph(filtered_df, f" - {', '.join(selected_countries[:3])} - {', '.join(selected_inadmissibility)}")
+            slope_fig = create_resident_slope_graph(filtered_df, f" - {selected_countries} - {selected_inadmissibility}")
             if slope_fig:
                 st.plotly_chart(slope_fig, use_container_width=True)
     
     # Case 5: Only Year selected (show treemap for top countries with inadmissibility grounds)
     elif year_selected and not country_selected and not inadmissibility_selected:
-        st.subheader(f"🗺️ Top Countries and Inadmissibility Grounds for {', '.join(map(str, selected_years))}")
+        st.subheader(f"🗺️ Top Countries and Inadmissibility Grounds for {selected_years}")
         
-        # Get top 5 countries for the selected year(s)
+        # Get top 5 countries for the selected year
         top_countries_data = filtered_df.groupby('country')['count'].sum().sort_values(ascending=False).head(5)
         treemap_data = filtered_df[filtered_df['country'].isin(top_countries_data.index)]
         
@@ -486,7 +452,7 @@ else:
                 treemap_data,
                 path=["country", "inadmissibility_grounds"],
                 values="count",
-                title=f"Top 5 Countries and Inadmissibility Grounds for {', '.join(map(str, selected_years))}",
+                title=f"Top 5 Countries and Inadmissibility Grounds for {selected_years}",
                 color="inadmissibility_grounds",
                 color_discrete_sequence=px.colors.qualitative.Set3
             )
@@ -496,17 +462,16 @@ else:
             
             # Add slope graph for resident comparison
             st.subheader("📊 Permanent vs Temporary Residents Comparison")
-            slope_fig = create_resident_slope_graph(filtered_df, f" - {', '.join(map(str, selected_years))}")
+            slope_fig = create_resident_slope_graph(filtered_df, f" - {selected_years}")
             if slope_fig:
                 st.plotly_chart(slope_fig, use_container_width=True)
       # Case 6: Only Country selected (show multiple analysis)
     elif country_selected and not year_selected and not inadmissibility_selected:
-        st.subheader(f"📊 Analysis for {', '.join(selected_countries[:3])}")
+        st.subheader(f"📊 Analysis for {selected_countries}")
         
         col1, col2 = st.columns(2)
         
-        with col1:
-            # Time series for the selected country(ies)
+        with col1:            # Time series for the selected country
             yearly_data = filtered_df.groupby('year')['count'].sum().reset_index()
             
             if not yearly_data.empty:
@@ -514,7 +479,7 @@ else:
                     yearly_data,
                     x='year',
                     y='count',
-                    title=f'Refusals Over Time for {", ".join(selected_countries[:3])}',
+                    title=f'Refusals Over Time for {selected_countries}',
                     markers=True,
                     line_shape='spline'
                 )
@@ -534,7 +499,7 @@ else:
                     x='year',
                     y='count',
                     color='inadmissibility_grounds',
-                    title=f'Inadmissibility Trends for {", ".join(selected_countries[:3])}',
+                    title=f'Inadmissibility Trends for {selected_countries}',
                     markers=True
                 )
                 fig_trends.update_layout(
@@ -550,7 +515,7 @@ else:
                 filtered_df,
                 path=["country", "inadmissibility_grounds"],
                 values="count",
-                title=f"Inadmissibility Grounds for {', '.join(selected_countries[:3])}",
+                title=f"Inadmissibility Grounds for {selected_countries}",
                 color="inadmissibility_grounds",
                 color_discrete_sequence=px.colors.qualitative.Set3
             )
@@ -559,12 +524,12 @@ else:
             st.plotly_chart(fig_treemap, use_container_width=True)
           # Add slope graph for resident comparison
         st.subheader("📊 Permanent vs Temporary Residents Comparison")
-        slope_fig = create_resident_slope_graph(filtered_df, f" - {', '.join(selected_countries[:3])}")
+        slope_fig = create_resident_slope_graph(filtered_df, f" - {selected_countries}")
         if slope_fig:
             st.plotly_chart(slope_fig, use_container_width=True)
       # Case 7: Only Inadmissibility selected (show comprehensive analysis)
     elif inadmissibility_selected and not year_selected and not country_selected:
-        st.subheader(f"📈 Analysis for {', '.join(selected_inadmissibility)}")
+        st.subheader(f"📈 Analysis for {selected_inadmissibility}")
         
         col1, col2 = st.columns(2)
         
@@ -577,7 +542,7 @@ else:
                     yearly_data,
                     x='year',
                     y='count',
-                    title=f'{", ".join(selected_inadmissibility)} Over Time',
+                    title=f'{selected_inadmissibility} Over Time',
                     markers=True,
                     line_shape='spline'
                 )
@@ -597,7 +562,7 @@ else:
                     top_countries,
                     x='country',
                     y='count',
-                    title=f'Top 10 Countries for {", ".join(selected_inadmissibility)}',
+                    title=f'Top 10 Countries for {selected_inadmissibility}',
                     color_discrete_sequence=['#4ECDC4']
                 )
                 fig_countries.update_layout(
@@ -619,7 +584,7 @@ else:
                 x='year',
                 y='count',
                 color='country',
-                title=f'Refusal Trends Over Time by Country for {", ".join(selected_inadmissibility)}',
+                title=f'Refusal Trends Over Time by Country for {selected_inadmissibility}',
                 markers=True
             )
             fig_trends.update_layout(
@@ -631,7 +596,7 @@ else:
             
             # Add slope graph for resident comparison
             st.subheader("📊 Permanent vs Temporary Residents Comparison")
-            slope_fig = create_resident_slope_graph(filtered_df, f" - {', '.join(selected_inadmissibility)}")
+            slope_fig = create_resident_slope_graph(filtered_df, f" - {selected_inadmissibility}")
             if slope_fig:
                 st.plotly_chart(slope_fig, use_container_width=True)
     
