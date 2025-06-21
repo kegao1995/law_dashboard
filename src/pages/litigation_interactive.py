@@ -5,8 +5,8 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import os
 
-# Page config
-st.set_page_config(page_title="Litigation Dashboard", layout="wide")
+
+st.title("Litigation Dashboard")
 
 path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "raw", "litigation_cases.xlsx")
 
