@@ -6,8 +6,6 @@ import plotly.graph_objects as go
 import os
 
 
-st.title("Litigation Dashboard")
-
 path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "raw", "litigation_cases.xlsx")
 
 # Load data

@@ -31,7 +31,6 @@ def load_data():
 
 lit = load_data()
 
-st.set_page_config(layout="wide")
 st.title("Litigation Case Dashboard")
 
 # ===== Section 1 =====
