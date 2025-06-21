@@ -13,7 +13,7 @@ st.markdown("---")
 @st.cache_data
 def load_data():
     """Load and cache the CSV data"""
-    data_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "a34_1_refused_cleaned.csv")
+    data_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "a34_1_refused_cleaned.csv")
     try:
         df = pd.read_csv(data_path)
         return df

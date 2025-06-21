@@ -1,10 +1,11 @@
 import streamlit as st
-# 设置页面宽度
+
 st.set_page_config(layout="wide")
 pages = {
-    "Data": [
+    "Dashboard": [
         st.Page("A34_Refused_Data.py", title="A34 Refused Data"),
-        #st.Page("page2.py", title="page2"),
+        st.Page("litigation_dashboard.py", title="Litigation Dashboard"),
+        st.Page("litigation_interactive.py", title="Litigation Interactive"),
     ],
 
 }
