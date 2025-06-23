@@ -31,6 +31,7 @@ def load_data():
 
 lit = load_data()
 
+st.set_page_config(layout="wide")
 st.title("Litigation Case Dashboard")
 
 # ===== Section 1 =====
@@ -135,7 +136,7 @@ for col_idx, (country_key, country_name) in enumerate(countries.items(), start=1
 
 fig.update_layout(
     height=800,
-    width=800,
+    width=1200,
     barmode="stack",
     plot_bgcolor="white",
     title_text="Case Type Breakdown Over Time (2018–2023)",
@@ -283,5 +284,5 @@ for i, case in enumerate(['Allowed', 'Discontinued', 'Dismissed']):
     if i == 0:
         fig.update_yaxes(title_text="Total Litigation Count", row=1, col=i+1)
 
-fig.update_layout(height=500, width=800, title_text="Decision Group Trends", showlegend=True)
+fig.update_layout(height=500, width=1200, title_text="Decision Group Trends", showlegend=True)
 st.plotly_chart(fig, use_container_width=True)
