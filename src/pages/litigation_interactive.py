@@ -15,8 +15,24 @@ def load_data():
 
 df = load_data()
 
-
 st.title("Litigation Application Dashboard")
+
+if not df.empty:
+    st.markdown(
+        """
+        ### Dataset Download
+        You can download the Litigation Application Dataset used in this analysis for your own review and further exploration.
+        """
+    )
+    csv_data = df.to_csv(index=False)
+    st.download_button(
+        label="Download Litigation Application Dataset (CSV)",
+        data=csv_data,
+        file_name="litigation_application.csv",
+        mime="text/csv"
+    )
+else:
+    st.warning("Dataset is empty, cannot download.")
 
 countries_list = sorted(df["Country of Citizenship"].dropna().unique())
 case_types_list = sorted(df["LIT Case Type Group Desc"].dropna().unique())

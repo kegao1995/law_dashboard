@@ -8,6 +8,10 @@ import os
 # Title
 st.title("A34 (1) Inadmissibility Refusal Dashboard")
 
+st.info("""
+**⚠️ Disclaimer:** Refusal numbers under A34(1) are quite low overall. While some patterns emerge, these are not sufficient for conclusive inferences. More contextual data, like total applications or approval rates, is essential for robust analysis.
+""")
+
 # Load data
 @st.cache_data
 def load_data():
@@ -22,6 +26,23 @@ def load_data():
 
 # Load data
 df = load_data()
+
+if not df.empty:
+    st.markdown(
+        """
+        ### Dataset Download
+        You can download the A34(1) Refusal Dataset used in this analysis for your own review and further exploration.
+        """
+    )
+    csv_data = df.to_csv(index=False)
+    st.download_button(
+        label="Download Refusal Dataset (CSV)",
+        data=csv_data,
+        file_name="a34_1_refusal.csv",
+        mime="text/csv"
+    )
+else:
+    st.warning("Dataset is empty, cannot download.")
 
 if df.empty:
     st.stop()
